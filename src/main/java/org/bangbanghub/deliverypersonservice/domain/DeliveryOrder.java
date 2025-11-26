@@ -19,7 +19,7 @@ public class DeliveryOrder implements Comparable<DeliveryOrder> {
 
     private DeliveryOrder(Long value) {
         if (value == null || value <= 0) {
-            throw new IllegalArgumentException("배송 순번은 1 이상이어야 합니다.");
+            throw new IllegalArgumentException("배");
         }
         this.value = value;
     }
