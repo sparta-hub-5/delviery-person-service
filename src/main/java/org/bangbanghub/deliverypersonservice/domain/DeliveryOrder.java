@@ -17,6 +17,12 @@ public class DeliveryOrder implements Comparable<DeliveryOrder> {
     @Column(name = "delivery_order", nullable = false, unique = true)
     private Long value;
 
+    /**
+     * Creates a DeliveryOrder with the specified delivery sequence number.
+     *
+     * @param value the delivery sequence number; must be greater than 0
+     * @throws IllegalArgumentException if {@code value} is {@code null} or less than or equal to 0
+     */
     private DeliveryOrder(Long value) {
         if (value == null || value <= 0) {
             throw new IllegalArgumentException("배");

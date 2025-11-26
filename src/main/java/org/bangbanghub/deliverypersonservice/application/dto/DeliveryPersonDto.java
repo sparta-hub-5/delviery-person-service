@@ -48,6 +48,13 @@ public record DeliveryPersonDto() {
         String phoneNumber,
         DeliveryPersonStatus status
     ) {
+        /**
+         * Create a Response DTO representing the provided DeliveryPerson entity.
+         *
+         * @param entity the domain DeliveryPerson to map from
+         * @return a Response populated with the entity's identifiers, type, delivery order value, contact details, and status;
+         *         the `hubId` will be `null` if the entity has no hub assigned
+         */
         public static Response from(DeliveryPerson entity) {
             return Response.builder()
                 .userId(entity.getId().getId())

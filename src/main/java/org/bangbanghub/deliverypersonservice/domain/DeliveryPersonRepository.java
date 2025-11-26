@@ -9,7 +9,11 @@ public interface DeliveryPersonRepository extends JpaRepository<DeliveryPerson, 
     JpaSpecificationExecutor<DeliveryPerson> {
 
     // 마지막 배송 순번을 가진 담당자 조회 (순번 생성용)
-    // DeliveryOrder는 @Embedded 타입이므로 내부 필드명(value)으로 접근
+    /**
+     * Retrieves the DeliveryPerson with the largest deliveryOrder.value.
+     *
+     * @return an Optional containing the DeliveryPerson that has the highest deliveryOrder.value, or an empty Optional if none exist
+     */
     @Query("SELECT dp FROM DeliveryPerson dp ORDER BY dp.deliveryOrder.value DESC LIMIT 1")
     Optional<DeliveryPerson> findTopByOrderByDeliveryOrderDesc();
 }

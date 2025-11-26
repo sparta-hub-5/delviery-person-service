@@ -25,7 +25,13 @@ public class DeliveryPersonService {
     private final DeliveryPersonRepository deliveryPersonRepository;
     private final HubValidator hubValidator; // 도메인 서비스(Validator) 주입
 
-    // [Create]
+    /**
+     * Create a new delivery person from the provided request and persist it.
+     *
+     * @param request the creation request containing userId, optional hubId, slackId, type, name, and phoneNumber
+     * @return the UUID of the created delivery person
+     * @throws IllegalArgumentException if a delivery person with the same userId already exists
+     */
     @Transactional
     public UUID create(DeliveryPersonDto.CreateRequest request) {
         UserId userId = new UserId(request.userId());
@@ -56,13 +62,26 @@ public class DeliveryPersonService {
         return userId.getId();
     }
 
-    // [Read - Single]
+    /**
+     * Retrieve the delivery person identified by the given user ID and return it as a response DTO.
+     *
+     * @param userId the UUID of the delivery person to retrieve
+     * @return the delivery person represented as a {@code DeliveryPersonDto.Response}
+     */
     public DeliveryPersonDto.Response getDeliveryPerson(UUID userId) {
         DeliveryPerson deliveryPerson = findByIdOrThrow(new UserId(userId));
         return DeliveryPersonDto.Response.from(deliveryPerson);
     }
 
-    // [Read - Search & Pagination]
+    /**
+     * Searches delivery persons using the given filter conditions and returns a paged result.
+     *
+     * Supported filters in the search condition: hubId, type, status, and a partial match on name.
+     *
+     * @param condition filtering criteria for the search; fields may be null to omit that filter
+     * @param pageable  pagination and sorting information
+     * @return a page of {@code DeliveryPersonDto.Response} matching the provided filters
+     */
     public Page<Response> search(DeliveryPersonDto.SearchCondition condition, Pageable pageable) {
         Specification<DeliveryPerson> spec = (root, query, cb) -> cb.conjunction();
 
@@ -87,7 +106,13 @@ public class DeliveryPersonService {
             .map(DeliveryPersonDto.Response::from);
     }
 
-    // [Update]
+    /**
+     * Updates an existing delivery person's hub, Slack ID, type, name, and phone number.
+     *
+     * @param userId the UUID of the delivery person to update
+     * @param request DTO containing the new hubId (nullable), slackId, type, name, and phoneNumber
+     * @throws IllegalArgumentException if a delivery person with the given id does not exist
+     */
     @Transactional
     public void update(UUID userId, DeliveryPersonDto.UpdateRequest request) {
         DeliveryPerson deliveryPerson = findByIdOrThrow(new UserId(userId));
@@ -103,13 +128,24 @@ public class DeliveryPersonService {
         );
     }
 
-    // [Delete]
+    /**
+     * Soft-deletes the delivery person identified by the given user ID.
+     *
+     * @param userId the UUID of the delivery person to soft-delete
+     */
     @Transactional
     public void delete(UUID userId) {
         DeliveryPerson deliveryPerson = findByIdOrThrow(new UserId(userId));
         deliveryPerson.delete(); // Soft Delete
     }
 
+    /**
+     * Retrieve the DeliveryPerson with the given user id or throw if none exists.
+     *
+     * @param userId the identifier of the delivery person to retrieve
+     * @return the DeliveryPerson matching the provided user id
+     * @throws IllegalArgumentException if a DeliveryPerson with the given id does not exist
+     */
     private DeliveryPerson findByIdOrThrow(UserId userId) {
         return deliveryPersonRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));

@@ -43,7 +43,18 @@ public class DeliveryPerson extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private DeliveryPersonStatus status;
 
-    // 생성자: 팩토리 메서드를 통해서만 호출됨
+    /**
+     * Private constructor that initializes a DeliveryPerson with the given identity and domain attributes.
+     *
+     * @param id the user's embedded identifier
+     * @param hubId the embedded hub identifier (may be null for delivery person types that do not require a hub)
+     * @param slackId the embedded Slack identifier
+     * @param type the delivery person type
+     * @param deliveryOrder the delivery person's ordering information within a hub's sequence
+     * @param name the delivery person's display name (max length 50)
+     * @param phoneNumber the delivery person's contact phone number (max length 20)
+     * @param status the delivery person's current status
+     */
     private DeliveryPerson(UserId id, HubId hubId, SlackId slackId,
         DeliveryPersonType type, DeliveryOrder deliveryOrder,
         String name, String phoneNumber, DeliveryPersonStatus status) {
@@ -58,9 +69,18 @@ public class DeliveryPerson extends BaseEntity {
     }
 
     /**
-     * 배송 담당자 생성 (Factory Method)
-     * - 규칙 1: 새로운 담당자는 마지막 순번 + 1로 설정됨
-     * - 규칙 2: 업체 배송 담당자는 유효한 허브 ID가 필수
+     * Create a new DeliveryPerson with a computed delivery order and initial ACTIVE status.
+     *
+     * The new delivery order is the next sequence after {@code lastOrder} (or the first order if {@code lastOrder} is {@code null}). For COMPANY_DELIVERY_PERSON, a non-null and existing {@code hubId} is required.
+     *
+     * @param userId the identifier for the delivery person
+     * @param hubId the hub identifier (may be null unless {@code type} is COMPANY_DELIVERY_PERSON)
+     * @param slackId the Slack identifier for the delivery person
+     * @param type the delivery person type
+     * @param name the delivery person's name (max length 50)
+     * @param phoneNumber the delivery person's phone number (max length 20)
+     * @param lastOrder the current last delivery order in the sequence, or {@code null} if none
+     * @return the newly created DeliveryPerson with status set to {@code ACTIVE} and a computed delivery order
      */
     public static DeliveryPerson create(
         UserId userId,
@@ -91,8 +111,15 @@ public class DeliveryPerson extends BaseEntity {
     }
 
     /**
-     * 정보 수정
-     * - 규칙: 타입이 변경되거나 허브가 변경될 때도 업체 담당자 규칙 검증 필요
+     * Update the delivery person's hub, Slack ID, type, name, and phone number while enforcing hub-related rules.
+     *
+     * @param hubId        the new hub identifier (may be null unless required by the delivery person type)
+     * @param slackId      the new Slack identifier
+     * @param type         the new delivery person type
+     * @param name         the new display name (max length constraints apply elsewhere)
+     * @param phoneNumber  the new phone number
+     * @param hubValidator validator used to verify hub existence when required
+     * @throws IllegalArgumentException if the delivery person type requires a hub but none is provided or if the hub does not exist
      */
     public void update(
         HubId hubId,
@@ -112,14 +139,22 @@ public class DeliveryPerson extends BaseEntity {
     }
 
     /**
-     * 삭제 (Soft Delete)
-     * - 규칙: 삭제 시 배송 순번을 재배열하지 않음 (상태만 변경)
+     * Marks the delivery person as inactive to perform a soft delete.
+     *
+     * Sets the entity's status to DeliveryPersonStatus.INACTIVE without reordering delivery sequence.
      */
     public void delete() {
         this.status = DeliveryPersonStatus.INACTIVE; // 또는 SUSPENDED, 정책에 따라 결정
     }
 
-    // 내부 검증 로직: 업체 배송 담당자인 경우 허브 ID 존재 및 유효성 확인
+    /**
+     * Ensures that a hub is provided and exists when the delivery person type is COMPANY_DELIVERY_PERSON.
+     *
+     * @param type         the delivery person type to check
+     * @param hubId        the hub identifier that must be present for company delivery persons
+     * @param hubValidator validator used to check hub existence
+     * @throws IllegalArgumentException if the type is COMPANY_DELIVERY_PERSON and either `hubId` is null or the hub does not exist
+     */
     private static void validateHubRequirement(DeliveryPersonType type, HubId hubId, HubValidator hubValidator) {
         if (type == DeliveryPersonType.COMPANY_DELIVERY_PERSON) {
             if (hubId == null) {
