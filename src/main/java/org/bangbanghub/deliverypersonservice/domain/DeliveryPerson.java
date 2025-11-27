@@ -1,5 +1,7 @@
 package org.bangbanghub.deliverypersonservice.domain;
 
+import static java.util.Objects.requireNonNull;
+
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -103,6 +105,8 @@ public class DeliveryPerson extends BaseEntity {
     }
 
     private static void validateHubRequirement(DeliveryPersonType type, HubId hubId, HubValidator hubValidator) {
+        requireNonNull(type, "type must not be null");
+        requireNonNull(hubValidator, "hubValidator must not be null");
         if (type == DeliveryPersonType.COMPANY_DELIVERY_PERSON) {
             if (hubId == null) {
                 throw new IllegalArgumentException("업체 배송 담당자는 허브 ID가 필수입니다.");
