@@ -36,82 +36,71 @@ public class DeliveryPersonService {
         }
 
         // 2. 마지막 순번 조회
-        DeliveryOrder lastOrder = deliveryPersonRepository.findTopByOrderByDeliveryOrderDesc()
-            .map(DeliveryPerson::getDeliveryOrder)
-            .orElse(null);
+        DeliveryOrder lastOrder = deliveryPersonRepository.findTopByOrderByDeliveryOrderDescWithLock()
+                .map(DeliveryPerson::getDeliveryOrder)
+                .orElse(null);
 
         // 3. 엔티티 생성 (도메인 로직: 순번 계산, 허브 검증 등 수행)
         DeliveryPerson deliveryPerson = DeliveryPerson.create(
-            userId,
-            request.hubId() != null ? new HubId(request.hubId()) : null,
-            SlackId.of(request.slackId()),
-            request.type(),
-            request.name(),
-            request.phoneNumber(),
-            lastOrder,
-            hubValidator
-        );
+                userId,
+                request.hubId() != null ? new HubId(request.hubId()) : null,
+                SlackId.of(request.slackId()),
+                request.type(),
+                request.name(),
+                request.phoneNumber(),
+                lastOrder,
+                hubValidator);
 
         deliveryPersonRepository.save(deliveryPerson);
         return userId.getId();
     }
 
-    // [Read - Single]
     public DeliveryPersonDto.Response getDeliveryPerson(UUID userId) {
         DeliveryPerson deliveryPerson = findByIdOrThrow(new UserId(userId));
         return DeliveryPersonDto.Response.from(deliveryPerson);
     }
 
-    // [Read - Search & Pagination]
     public Page<Response> search(DeliveryPersonDto.SearchCondition condition, Pageable pageable) {
         Specification<DeliveryPerson> spec = (root, query, cb) -> cb.conjunction();
 
         if (condition.hubId() != null) {
-            spec = spec.and((root, query, cb) ->
-                cb.equal(root.get("hubId").get("id"), condition.hubId()));
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("hubId").get("id"), condition.hubId()));
         }
         if (condition.type() != null) {
-            spec = spec.and((root, query, cb) ->
-                cb.equal(root.get("type"), condition.type()));
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("type"), condition.type()));
         }
         if (condition.status() != null) {
-            spec = spec.and((root, query, cb) ->
-                cb.equal(root.get("status"), condition.status()));
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), condition.status()));
         }
         if (condition.name() != null && !condition.name().isBlank()) {
-            spec = spec.and((root, query, cb) ->
-                cb.like(root.get("name"), "%" + condition.name() + "%"));
+            spec = spec.and((root, query, cb) -> cb.like(root.get("name"), "%" + condition.name() + "%"));
         }
 
         return deliveryPersonRepository.findAll(spec, pageable)
-            .map(DeliveryPersonDto.Response::from);
+                .map(DeliveryPersonDto.Response::from);
     }
 
-    // [Update]
     @Transactional
     public void update(UUID userId, DeliveryPersonDto.UpdateRequest request) {
         DeliveryPerson deliveryPerson = findByIdOrThrow(new UserId(userId));
 
-        // 도메인 메서드를 통해 변경 (허브 필수 여부 등 재검증)
         deliveryPerson.update(
-            request.hubId() != null ? new HubId(request.hubId()) : null,
-            SlackId.of(request.slackId()),
-            request.type(),
-            request.name(),
-            request.phoneNumber(),
-            hubValidator
-        );
+                request.hubId() != null ? new HubId(request.hubId()) : null,
+                SlackId.of(request.slackId()),
+                request.type(),
+                request.name(),
+                request.phoneNumber(),
+                hubValidator);
     }
 
-    // [Delete]
     @Transactional
     public void delete(UUID userId) {
         DeliveryPerson deliveryPerson = findByIdOrThrow(new UserId(userId));
-        deliveryPerson.delete(); // Soft Delete
+        deliveryPerson.delete();
     }
 
     private DeliveryPerson findByIdOrThrow(UserId userId) {
         return deliveryPersonRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("배송 담당자를 찾을 수 없습니다."));
     }
 }

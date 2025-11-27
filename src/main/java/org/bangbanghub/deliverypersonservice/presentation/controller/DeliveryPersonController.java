@@ -16,50 +16,42 @@ import java.net.URI;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/delivery-persons")
+@RequestMapping("/delivery-persons")
 @RequiredArgsConstructor
 public class DeliveryPersonController {
 
     private final DeliveryPersonService deliveryPersonService;
 
-    // 생성
     @PostMapping
-    public ResponseEntity<UUID> create(@RequestBody DeliveryPersonDto.CreateRequest request) {
+    public ResponseEntity<UUID> create(@RequestBody @jakarta.validation.Valid DeliveryPersonDto.CreateRequest request) {
         UUID createdId = deliveryPersonService.create(request);
         return ResponseEntity.created(URI.create("/api/delivery-persons/" + createdId)).body(createdId);
     }
 
-    // 단건 조회
     @GetMapping("/{userId}")
     public ResponseEntity<DeliveryPersonDto.Response> get(@PathVariable UUID userId) {
         return ResponseEntity.ok(deliveryPersonService.getDeliveryPerson(userId));
     }
 
-    // 검색 및 목록 조회 (페이징)
-    // 예: GET /api/delivery-persons?hubId=...&status=ACTIVE&page=0&size=10
     @GetMapping
     public ResponseEntity<Page<DeliveryPersonDto.Response>> search(
-        @RequestParam(required = false) UUID hubId,
-        @RequestParam(required = false) DeliveryPersonType type,
-        @RequestParam(required = false) DeliveryPersonStatus status,
-        @RequestParam(required = false) String name,
-        @PageableDefault(sort = "deliveryOrder.value", direction = Sort.Direction.ASC) Pageable pageable
-    ) {
+            @RequestParam(required = false) UUID hubId,
+            @RequestParam(required = false) DeliveryPersonType type,
+            @RequestParam(required = false) DeliveryPersonStatus status,
+            @RequestParam(required = false) String name,
+            @PageableDefault(sort = "deliveryOrder.value", direction = Sort.Direction.ASC) Pageable pageable) {
         var condition = new DeliveryPersonDto.SearchCondition(hubId, type, status, name);
         return ResponseEntity.ok(deliveryPersonService.search(condition, pageable));
     }
 
-    // 수정
     @PutMapping("/{userId}")
     public ResponseEntity<Void> update(
-        @PathVariable UUID userId,
-        @RequestBody DeliveryPersonDto.UpdateRequest request
-    ) {
+            @PathVariable UUID userId,
+            @RequestBody @jakarta.validation.Valid DeliveryPersonDto.UpdateRequest request) {
         deliveryPersonService.update(userId, request);
         return ResponseEntity.ok().build();
     }
 
-    // 삭제 (Soft Delete)
     @DeleteMapping("/{userId}")
     public ResponseEntity<Void> delete(@PathVariable UUID userId) {
         deliveryPersonService.delete(userId);
